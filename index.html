@@ -1,20 +1,118 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Game Arcade</title>
-    <link rel="stylesheet" href="css/style.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Game Arcade</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { min-height:100%; font-family:'Comic Sans MS','Segoe UI',sans-serif; color:#fff;
+    background:radial-gradient(ellipse at 50% -10%, #33518f 0%, #1a2545 45%, #0d1428 100%); background-attachment:fixed;
+    -webkit-user-select:none; user-select:none; }
+  body { padding:22px 16px calc(30px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; align-items:center; }
+  .wrap { width:100%; max-width:440px; }
+  .head { text-align:center; margin:6px 0 18px; }
+  .head h1 { font-size:38px; font-weight:900; letter-spacing:.5px; text-shadow:0 3px 16px rgba(0,0,0,.45); }
+  .head .sub { font-size:13px; opacity:.7; margin-top:2px; letter-spacing:2px; text-transform:uppercase; }
+
+  .card { background:rgba(255,255,255,.06); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    border:1px solid rgba(255,255,255,.1); border-radius:20px; box-shadow:0 10px 30px rgba(0,0,0,.28); }
+
+  /* leaderboard */
+  .lb { padding:16px 18px; margin-bottom:20px; }
+  .lb h2 { font-size:13px; letter-spacing:2px; text-transform:uppercase; color:#ffd54a; text-align:center; margin-bottom:12px; }
+  .lbrow { display:flex; align-items:center; gap:10px; padding:6px 4px; font-size:14px; border-bottom:1px solid rgba(255,255,255,.06); }
+  .lbrow:last-child { border-bottom:0; }
+  .lbrow .rk { width:22px; font-weight:900; color:#8ea3c8; text-align:right; }
+  .lbrow.top .rk { color:#ffd54a; }
+  .lbrow .nm { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:700; }
+  .lbrow .gm { font-size:10px; opacity:.55; background:rgba(255,255,255,.08); padding:2px 7px; border-radius:8px; }
+  .lbrow .sc { font-weight:900; color:#7fc4ff; min-width:56px; text-align:right; }
+  .muted { opacity:.6; font-size:13px; text-align:center; padding:10px; }
+
+  /* game cards */
+  .games { display:flex; flex-direction:column; gap:14px; }
+  a.game { display:flex; align-items:center; gap:14px; padding:16px; text-decoration:none; color:#fff; position:relative; overflow:hidden;
+    transition:transform .08s; }
+  a.game:active { transform:scale(.98); }
+  .game .ic { width:56px; height:56px; border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:30px; flex-shrink:0;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.15); }
+  .game .tx { flex:1; min-width:0; }
+  .game .tx .t { font-size:19px; font-weight:900; }
+  .game .tx .d { font-size:12.5px; opacity:.75; margin-top:2px; }
+  .game .go { font-size:26px; opacity:.5; }
+  .badge { position:absolute; top:10px; right:12px; font-size:10px; font-weight:900; letter-spacing:.5px; color:#5a3d00;
+    background:linear-gradient(160deg,#ffd54a,#f5a623); padding:3px 9px; border-radius:10px; }
+  .g-sk8 .ic { background:linear-gradient(150deg,#3f6fd6,#28407e); }
+  .g-jtt .ic { background:linear-gradient(150deg,#33aa66,#1f6b40); }
+  .g-3d  .ic { background:linear-gradient(150deg,#ff7a3c,#d64f1f); }
+  .g-3d { border-color:rgba(255,140,70,.4); box-shadow:0 10px 30px rgba(0,0,0,.28), 0 0 0 1px rgba(255,140,70,.2); }
+
+  .foot { text-align:center; opacity:.5; font-size:11px; margin-top:22px; }
+</style>
 </head>
 <body>
-    <div id="game-container"></div>
-    <script src="js/phaser.min.js"></script>
-    <script src="js/shared.js"></script>
-    <script src="js/skateboard_jumps.js"></script>
-    <script src="js/jump_to_top.js"></script>
-    <script src="js/launcher.js"></script>
+<div class="wrap">
+  <div class="head">
+    <h1>🎮 Game Arcade</h1>
+    <div class="sub">by Anzon &amp; Asher</div>
+  </div>
+
+  <div class="card lb">
+    <h2>🏆 Leaderboard</h2>
+    <div id="lb"><div class="muted">Loading…</div></div>
+  </div>
+
+  <div class="games">
+    <a class="game card g-3d" href="skate3d.html">
+      <div class="ic">🛹</div>
+      <div class="tx"><div class="t">Skate 3D</div><div class="d">3D skating — flips, tricks &amp; power-ups!</div></div>
+      <div class="go">›</div>
+      <div class="badge">⭐ NEW</div>
+    </a>
+    <a class="game card g-sk8" href="play.html?game=skateboard">
+      <div class="ic">🛹</div>
+      <div class="tx"><div class="t">Skateboard Jumps</div><div class="d">Endless runner on a motorway!</div></div>
+      <div class="go">›</div>
+    </a>
+    <a class="game card g-jtt" href="play.html?game=jtt">
+      <div class="ic">⬆️</div>
+      <div class="tx"><div class="t">Jump to the Top</div><div class="d">Bounce your way up to the sky!</div></div>
+      <div class="go">›</div>
+    </a>
+  </div>
+
+  <div class="foot">Tap a game to play · scores are shared across all games</div>
+</div>
+
+<script>
+const FB = 'worldcup-bet-2026', KEY = 'AIzaSyCNwMFWLo2WP6la9bx2rdwIoeEsv-6uNEM';
+const BASE = `https://firestore.googleapis.com/v1/projects/${FB}/databases/(default)/documents`;
+const GLABEL = { skateboard:'SK8', jumptotop:'JTT', skate3d:'3D' };
+async function loadLb(){
+  const el = document.getElementById('lb');
+  try {
+    const body = { structuredQuery: { from:[{collectionId:'arcade_scores'}],
+      orderBy:[{field:{fieldPath:'score'},direction:'DESCENDING'}], limit:10 } };
+    const r = await fetch(`${BASE}:runQuery?key=${KEY}`, { method:'POST',
+      headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    if (!r.ok) throw 0;
+    const rows = await r.json();
+    const scores = (rows||[]).filter(x=>x.document).map(x=>{ const f=x.document.fields||{};
+      return { name:((f.name&&f.name.stringValue)||'???').slice(0,12),
+        score:parseInt((f.score&&(f.score.integerValue||f.score.doubleValue))||0,10),
+        game:(f.game&&f.game.stringValue)||'' }; });
+    if (!scores.length){ el.innerHTML='<div class="muted">No scores yet — be the first! 🥇</div>'; return; }
+    el.innerHTML = scores.map((s,i)=>`<div class="lbrow ${i<3?'top':''}">
+      <span class="rk">${i+1}</span>
+      <span class="nm">${(s.name||'???').replace(/[<>&]/g,'')}</span>
+      <span class="gm">${GLABEL[s.game]||''}</span>
+      <span class="sc">${s.score.toLocaleString()}</span></div>`).join('');
+  } catch(e){ el.innerHTML='<div class="muted">Leaderboard unavailable right now</div>'; }
+}
+loadLb();
+</script>
 </body>
 </html>

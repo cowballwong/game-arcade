@@ -8,7 +8,12 @@
 // ============================================================
 class BootScene extends Phaser.Scene {
     constructor() { super('Boot'); }
-    create() { generateAllTextures(this); this.scene.start('Launcher'); }
+    create() { generateAllTextures(this);
+        // Boot straight into the game chosen on the HTML landing (index.html), e.g.
+        // play.html?game=skateboard | jtt. No param → Launcher (which redirects to index.html).
+        const g = new URLSearchParams(location.search).get('game');
+        this.scene.start(g==='jtt' ? 'JTTBoot' : g==='skateboard' ? 'MainMenu' : 'Launcher');
+    }
 }
 
 // ============================================================

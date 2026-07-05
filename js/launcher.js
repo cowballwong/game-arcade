@@ -10,8 +10,10 @@ class LauncherScene extends Phaser.Scene {
     constructor() { super('Launcher'); }
 
     create() {
-        audio.init();
-        audio.stopMusic();
+        // The arcade landing page is now the sleek HTML index.html. Any in-game
+        // "BACK TO ARCADE" that starts this scene simply bounces to it.
+        window.location.href = 'index.html';
+        return;
         this.cameras.main.setBackgroundColor('#1a1a2e');
 
         // Background gradient
