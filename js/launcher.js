@@ -78,20 +78,24 @@ class LauncherScene extends Phaser.Scene {
         this._fetchLeaderboard();
 
         // ---- Game cards (compact) ----
-        this._drawGameCard(265, 'SKATEBOARD JUMPS', 0x3366CC, 'Endless runner on a motorway!', () => {
+        this._drawGameCard(256, 'SKATEBOARD JUMPS', 0x3366CC, 'Endless runner on a motorway!', () => {
             this.scene.start('MainMenu');
         }, 'skateboard');
 
-        this._drawGameCard(340, 'JUMP TO THE TOP', 0x33AA66, 'Bounce your way up to the sky!', () => {
+        this._drawGameCard(316, 'JUMP TO THE TOP', 0x33AA66, 'Bounce your way up to the sky!', () => {
             this.scene.start('JTTBoot');
         }, 'jumptotop');
 
+        this._drawGameCard(376, 'SKATE 3D  ⭐NEW', 0xFF6633, 'Skate in full 3D! Made by Asher', () => {
+            window.location.href = 'skate3d.html';
+        }, 'skateboard');
+
         // Footer
-        this.add.text(GAME_W / 2, 405, 'TOTAL COINS: $' + (SaveData.get('totalCoins') || 0), {
+        this.add.text(GAME_W / 2, 424, 'TOTAL COINS: $' + (SaveData.get('totalCoins') || 0), {
             fontSize: '9px', fontFamily: 'monospace', color: '#FFD700'
         }).setOrigin(0.5);
 
-        this.add.text(GAME_W / 2, 420, 'v1.1', {
+        this.add.text(GAME_W / 2, 438, 'v1.2', {
             fontSize: '7px', fontFamily: 'monospace', color: '#444'
         }).setOrigin(0.5);
     }
@@ -120,7 +124,7 @@ class LauncherScene extends Phaser.Scene {
             const rankCol = i < 3 ? ['#FFD700', '#C0C0C0', '#CD7F32'][i] : '#777';
             const nameStr = (entry.name || '???').substring(0, 10);
             const scoreStr = String(entry.score || 0);
-            const gameStr = entry.game === 'skateboard' ? 'SK8' : entry.game === 'jumptotop' ? 'JTT' : '???';
+            const gameStr = entry.game === 'skateboard' ? 'SK8' : entry.game === 'jumptotop' ? 'JTT' : entry.game === 'skate3d' ? '3D' : '???';
             const dateStr = entry.date ? entry.date.slice(0, 10).substring(5) : '';
 
             this.add.text(22, rowY, (i + 1) + '.', { fontSize: '7px', fontFamily: 'monospace', color: rankCol });
