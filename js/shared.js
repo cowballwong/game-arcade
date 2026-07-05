@@ -47,40 +47,65 @@ const SaveData = {
 SaveData.load();
 
 // ============================================================
-// LEADERBOARD - Google Apps Script backend
+// LEADERBOARD - Firebase Firestore backend
 // ============================================================
-// To set up: deploy leaderboard_apps_script.js as a Google Apps Script Web App
-// then paste the URL below (ending in /exec)
-const LEADERBOARD_URL = 'https://script.google.com/macros/s/AKfycbzQZ8dcdADcRRhNQpuAYHRuKaDqhZS-SsIryPj7uJwD3R1BP75uaP8YdBrKp75e65iWGQ/exec';
+// Backed by the "worldcup-bet-2026" Firebase project, collection `arcade_scores`
+// (public read + validated create; see firestore.rules in the worldcup-bet repo).
+// Uses the Firestore REST API directly — no SDK, so shared.js stays a plain script.
+// The web apiKey is a public client identifier (safe to embed); write access is
+// gated by the security rules, not the key.
+const FB_PROJECT = 'worldcup-bet-2026';
+const FB_API_KEY = 'AIzaSyCNwMFWLo2WP6la9bx2rdwIoeEsv-6uNEM';
+const FS_BASE = `https://firestore.googleapis.com/v1/projects/${FB_PROJECT}/databases/(default)/documents`;
+const FS_COLLECTION = 'arcade_scores';
 
 const Leaderboard = {
     _cache: null,
     async fetch() {
-        if (!LEADERBOARD_URL) return this._cache || [];
         try {
-            const r = await fetch(LEADERBOARD_URL, { redirect: 'follow' });
+            const body = { structuredQuery: {
+                from: [{ collectionId: FS_COLLECTION }],
+                orderBy: [{ field: { fieldPath: 'score' }, direction: 'DESCENDING' }],
+                limit: 20
+            }};
+            const r = await fetch(`${FS_BASE}:runQuery?key=${FB_API_KEY}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
             if (!r.ok) throw new Error('fetch failed');
-            const d = await r.json();
-            this._cache = d.scores || [];
-            return this._cache;
-        } catch(e) {
+            const rows = await r.json();
+            const scores = (rows || []).filter(x => x.document).map(x => {
+                const f = x.document.fields || {};
+                return {
+                    name: (f.name && f.name.stringValue) || '???',
+                    score: parseInt((f.score && (f.score.integerValue || f.score.doubleValue)) || 0, 10),
+                    game: (f.game && f.game.stringValue) || '',
+                    difficulty: (f.difficulty && f.difficulty.stringValue) || ''
+                };
+            });
+            this._cache = scores;
+            return scores;
+        } catch (e) {
             return this._cache || [];
         }
     },
     async submit(name, score, game, extra) {
-        if (!LEADERBOARD_URL) return false;
         try {
-            // Use GET with query params to avoid POST redirect CORS issues
-            const params = new URLSearchParams({
-                action: 'submit', name, score, game,
-                difficulty: (extra && extra.difficulty) || ''
+            const fields = {
+                name: { stringValue: String(name || '???').slice(0, 12) },
+                score: { integerValue: String(Math.max(0, Math.floor(Number(score) || 0))) },
+                game: { stringValue: String(game || '') },
+                difficulty: { stringValue: String((extra && extra.difficulty) || '') },
+                ts: { timestampValue: new Date().toISOString() }
+            };
+            const r = await fetch(`${FS_BASE}/${FS_COLLECTION}?key=${FB_API_KEY}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fields })
             });
-            const r = await fetch(LEADERBOARD_URL + '?' + params.toString(), { redirect: 'follow' });
             if (!r.ok) throw new Error('submit failed');
-            const d = await r.json();
-            if (d.scores) this._cache = d.scores;
-            return d.success || false;
-        } catch(e) {
+            await this.fetch();   // refresh cache with the new standings
+            return true;
+        } catch (e) {
             return false;
         }
     }
