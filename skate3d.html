@@ -13,6 +13,7 @@
   #trickPop { position:fixed; top:36%; left:0; right:0; text-align:center; z-index:6; color:#ffd54a; font-size:30px; font-weight:bold; text-shadow:0 2px 8px rgba(0,0,0,.55); opacity:0; pointer-events:none; }
   #trickPop.show { animation:trickpop .8s ease-out; }
   @keyframes trickpop { 0%{opacity:0;transform:scale(.6)} 20%{opacity:1;transform:scale(1.15)} 70%{opacity:1;transform:scale(1)} 100%{opacity:0;transform:translateY(-34px) scale(1)} }
+  #puHud { position:fixed; top:54px; left:0; right:0; text-align:center; z-index:6; font-size:22px; pointer-events:none; text-shadow:0 2px 6px rgba(0,0,0,.5); }
   .btns { position:fixed; bottom:22px; left:0; right:0; display:flex; justify-content:center; gap:18px; z-index:6; }
   .btn { width:78px; height:78px; border-radius:50%; background:rgba(255,255,255,.28); border:3px solid rgba(255,255,255,.7);
          color:#fff; font-size:32px; display:flex; align-items:center; justify-content:center; user-select:none; }
@@ -34,6 +35,7 @@
 <a href="index.html" id="backBtn" style="position:fixed;top:12px;left:12px;z-index:7;color:#fff;font-size:15px;font-weight:bold;text-decoration:none;background:rgba(0,0,0,.3);padding:7px 13px;border-radius:20px;backdrop-filter:blur(3px);">← Arcade</a>
 <div class="hud"><div id="score">0</div><small id="best"></small></div>
 <div id="trickPop"></div>
+<div id="puHud"></div>
 
 <div class="btns" id="btns" style="display:none">
   <div class="btn" id="bL">◀</div>
@@ -44,7 +46,7 @@
 <div class="screen" id="startScreen">
   <h1>🛹 Skate 3D</h1>
   <p>Made by <b>Asher</b> 🎮</p>
-  <p>Dodge the red blocks, grab the gold coins, see how far you can go!<br>It gets faster the longer you survive 😎</p>
+  <p>Dodge the red blocks, grab the gold coins, see how far you can go!<br>Grab 🛡 shields (survive a crash) & 🧲 magnets (pull coins)!<br>It gets faster the longer you survive 😎</p>
   <p><small>◀ ▶ move · JUMP to hop · tap JUMP again in the AIR to FLIP! 🤸</small></p>
   <p><small>Backflip → Frontflip → 360 · chain them for combo points!</small></p>
   <button class="play" id="startBtn">▶ PLAY</button>
@@ -111,6 +113,11 @@ const coinMat = new THREE.MeshStandardMaterial({ color:0xffd54a, metalness:0.4, 
 const obstacles = [], coins = [];
 for (let i=0;i<12;i++){ const o=new THREE.Mesh(new THREE.BoxGeometry(1.4,1.4,1.4), obMat); o.visible=false; scene.add(o); obstacles.push(o); }
 for (let i=0;i<21;i++){ const c=new THREE.Mesh(new THREE.TorusGeometry(0.4,0.16,10,20), coinMat); c.visible=false; scene.add(c); coins.push(c); }
+// power-ups (Asher "make it more fun") — SHIELD survives a crash, MAGNET pulls coins
+const shieldMat = new THREE.MeshStandardMaterial({ color:0x33bbff, emissive:0x1166aa, emissiveIntensity:0.6 });
+const magnetMat = new THREE.MeshStandardMaterial({ color:0xff8833, emissive:0xaa4400, emissiveIntensity:0.6 });
+const powerups = [];
+for (let i=0;i<4;i++){ const p=new THREE.Mesh(new THREE.IcosahedronGeometry(0.55,0), shieldMat); p.visible=false; scene.add(p); powerups.push(p); }
 
 // state
 let state='start', lane=1, targetX=0, py=0, vy=0, onGround=true;
@@ -119,13 +126,15 @@ const GRAV=-55, JUMP_V=17;
 // Tricks (Asher): while in the air, tap JUMP again to flip. Chain for combos.
 const TRICKS3D=[{name:'BACKFLIP',axis:'x',dir:-1,bonus:30},{name:'FRONTFLIP',axis:'x',dir:1,bonus:40},{name:'360 SPIN',axis:'y',dir:1,bonus:60}];
 let flip=null, trickCombo=0;
+let shieldActive=false, magnetTimer=0;
 let best=+(localStorage.getItem('skate3d_best')||0);
 $('best').textContent = best ? 'Best: '+best : '';
 
 function reset(){
   lane=1; targetX=0; py=0; vy=0; onGround=true;
   speed=17; dist=0; score=0; nextSpawnDist=0;
-  obstacles.forEach(o=>o.visible=false); coins.forEach(c=>c.visible=false);
+  obstacles.forEach(o=>o.visible=false); coins.forEach(c=>c.visible=false); powerups.forEach(p=>p.visible=false);
+  shieldActive=false; magnetTimer=0; updatePU();
   player.position.set(0,0,0); player.rotation.set(0,0,0); flip=null; trickCombo=0; $('score').textContent='0';
 }
 function spawnRow(){
@@ -137,11 +146,13 @@ function spawnRow(){
     if (cLane===obLane) cLane=(cLane+1)%3;
     for (let k=0;k<3;k++){ const c=coins.find(c=>!c.visible); if(c){ c.visible=true; c.position.set(LANES[cLane],0.9,SPAWN_Z-k*2.2); } }
   }
+  if (Math.random()<0.22){ const p=powerups.find(p=>!p.visible); if(p){ const isShield=Math.random()<0.5; p.userData.type=isShield?'shield':'magnet'; p.material=isShield?shieldMat:magnetMat; p.visible=true; p.position.set(LANES[Math.floor(Math.random()*3)],1.0,SPAWN_Z-6); } }
 }
 function move(d){ if(state!=='play')return; lane=Math.max(0,Math.min(2,lane+d)); targetX=LANES[lane]; }
 function jump(){ if(state!=='play')return; if(onGround){ vy=JUMP_V; onGround=false; trickCombo=0; } else { doTrick(); } }
 function doTrick(){ if(flip)return; const t=TRICKS3D[trickCombo%3]; trickCombo++; flip={axis:t.axis,dir:t.dir,remaining:Math.PI*2}; dist+=t.bonus; showTrick(t.name+'! +'+t.bonus); }
 function showTrick(txt){ const el=$('trickPop'); el.textContent=txt; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); }
+function updatePU(){ let s=''; if(shieldActive)s+='🛡'; if(magnetTimer>0)s+=(s?' ':'')+'🧲'+Math.ceil(magnetTimer); $('puHud').textContent=s; }
 function start(){ reset(); state='play'; $('startScreen').classList.add('hidden'); $('overScreen').classList.add('hidden'); $('btns').style.display='flex'; }
 function gameOver(){
   state='over'; $('btns').style.display='none'; $('finalScore').textContent=score;
@@ -189,13 +200,24 @@ function tick(now){
     const px = player.position.x;
     for (const o of obstacles){ if(!o.visible) continue;
       o.position.z += speed*dt;
-      if (o.position.z>-1 && o.position.z<1 && Math.abs(o.position.x-px)<1.0 && py<1.25) return gameOver();
+      if (o.position.z>-1 && o.position.z<1 && Math.abs(o.position.x-px)<1.0 && py<1.25){ if(shieldActive){ shieldActive=false; o.visible=false; showTrick('🛡 SAVED!'); updatePU(); } else return gameOver(); }
       if (o.position.z>9) o.visible=false;
     }
     for (const c of coins){ if(!c.visible) continue;
       c.position.z += speed*dt; c.rotation.y += dt*5;
+      if (magnetTimer>0) c.position.x += (px-c.position.x)*Math.min(1,dt*6);   // magnet pull
       if (c.position.z>-1 && c.position.z<1 && Math.abs(c.position.x-px)<1.0 && Math.abs(py-0.9)<1.2){ c.visible=false; dist+=12; }
       else if (c.position.z>9) c.visible=false;
+    }
+    if (magnetTimer>0){ magnetTimer-=dt; if(magnetTimer<0)magnetTimer=0; updatePU(); }
+    for (const p of powerups){ if(!p.visible) continue;
+      p.position.z += speed*dt; p.rotation.y += dt*2.5; p.rotation.x += dt*1.5;
+      if (p.position.z>-1.2 && p.position.z<1.4 && Math.abs(p.position.x-px)<1.2 && py<1.6){
+        p.visible=false;
+        if (p.userData.type==='shield'){ shieldActive=true; showTrick('🛡 SHIELD!'); }
+        else { magnetTimer=6; showTrick('🧲 MAGNET!'); }
+        updatePU();
+      } else if (p.position.z>9) p.visible=false;
     }
     if (dist>=nextSpawnDist){ spawnRow(); nextSpawnDist = dist + (11 + Math.random()*6); }
   }
