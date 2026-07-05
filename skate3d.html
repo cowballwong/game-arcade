@@ -156,6 +156,7 @@ addEventListener('touchend', e=>{
 
 let last=performance.now();
 function tick(now){
+  requestAnimationFrame(tick);   // schedule next frame FIRST so an early return (game over) never kills the loop
   const dt=Math.min(0.05,(now-last)/1000); last=now; spin+=dt;
   if (state==='play'){
     speed += dt*0.85;                        // gradually harder
@@ -187,7 +188,6 @@ function tick(now){
   camera.position.set(player.position.x*0.5, 4.2, 7);
   camera.lookAt(player.position.x*0.4, 1.2, -6);
   renderer.render(scene, camera);
-  requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);
 </script>
