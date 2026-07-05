@@ -6,34 +6,65 @@
 <title>Skate 3D — by Asher</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  html,body { height:100%; overflow:hidden; background:#87CEEB; font-family:'Comic Sans MS','Segoe UI',sans-serif; touch-action:none; }
+  html,body { height:100%; overflow:hidden; background:#7ec8e8; font-family:'Comic Sans MS','Segoe UI',sans-serif; touch-action:none; -webkit-user-select:none; user-select:none; }
   #c { display:block; width:100%; height:100%; }
-  .hud { position:fixed; top:14px; left:0; right:0; text-align:center; color:#fff; font-size:24px; font-weight:bold; text-shadow:0 2px 6px rgba(0,0,0,.45); pointer-events:none; z-index:5; }
-  .hud small { display:block; font-size:15px; opacity:.9; margin-top:2px; }
-  #trickPop { position:fixed; top:36%; left:0; right:0; text-align:center; z-index:6; color:#ffd54a; font-size:30px; font-weight:bold; text-shadow:0 2px 8px rgba(0,0,0,.55); opacity:0; pointer-events:none; }
+
+  /* top HUD — glass pills */
+  #hud { position:fixed; top:12px; left:0; right:0; display:flex; justify-content:center; gap:10px; z-index:5; pointer-events:none; }
+  .pill { background:rgba(20,28,48,.5); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); color:#fff; font-weight:800; font-size:21px;
+          padding:7px 16px; border-radius:22px; box-shadow:0 3px 10px rgba(0,0,0,.25); display:flex; align-items:center; gap:5px; }
+  .pill .u { font-size:12px; opacity:.7; }
+  .pill.coins { color:#ffd54a; }
+  #backBtn { position:fixed; top:14px; left:14px; z-index:7; color:#fff; font-size:14px; font-weight:800; text-decoration:none;
+             background:rgba(20,28,48,.5); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); padding:8px 13px; border-radius:20px; box-shadow:0 3px 10px rgba(0,0,0,.25); }
+
+  #trickPop { position:fixed; top:34%; left:0; right:0; text-align:center; z-index:6; color:#ffd54a; font-size:32px; font-weight:900;
+              text-shadow:0 2px 10px rgba(0,0,0,.55), 0 0 20px rgba(255,213,74,.4); opacity:0; pointer-events:none; }
   #trickPop.show { animation:trickpop .8s ease-out; }
-  @keyframes trickpop { 0%{opacity:0;transform:scale(.6)} 20%{opacity:1;transform:scale(1.15)} 70%{opacity:1;transform:scale(1)} 100%{opacity:0;transform:translateY(-34px) scale(1)} }
-  #puHud { position:fixed; top:54px; left:0; right:0; text-align:center; z-index:6; font-size:22px; pointer-events:none; text-shadow:0 2px 6px rgba(0,0,0,.5); }
-  .btns { position:fixed; bottom:22px; left:0; right:0; display:flex; justify-content:center; gap:18px; z-index:6; }
-  .btn { width:78px; height:78px; border-radius:50%; background:rgba(255,255,255,.28); border:3px solid rgba(255,255,255,.7);
-         color:#fff; font-size:32px; display:flex; align-items:center; justify-content:center; user-select:none; }
-  .btn:active { background:rgba(255,255,255,.5); transform:scale(.94); }
-  .btn.jump { width:96px; height:96px; font-size:24px; background:rgba(255,200,60,.42); border-color:#ffd54a; }
-  .screen { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:10;
-            background:rgba(20,30,60,.62); color:#fff; text-align:center; padding:24px; }
+  @keyframes trickpop { 0%{opacity:0;transform:scale(.5)} 18%{opacity:1;transform:scale(1.2)} 70%{opacity:1;transform:scale(1)} 100%{opacity:0;transform:translateY(-40px) scale(1)} }
+  #puHud { position:fixed; top:58px; left:0; right:0; text-align:center; z-index:6; font-size:22px; pointer-events:none; text-shadow:0 2px 6px rgba(0,0,0,.5); }
+
+  /* touch controls */
+  .btns { position:fixed; bottom:26px; left:0; right:0; display:flex; justify-content:center; align-items:center; gap:20px; z-index:6; }
+  .btn { width:76px; height:76px; border-radius:50%; background:rgba(255,255,255,.22); border:2px solid rgba(255,255,255,.65);
+         color:#fff; font-size:30px; font-weight:800; display:flex; align-items:center; justify-content:center;
+         backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); box-shadow:0 4px 12px rgba(0,0,0,.2); transition:transform .06s; }
+  .btn:active { background:rgba(255,255,255,.45); transform:scale(.9); }
+  .btn.jump { width:100px; height:100px; font-size:20px; letter-spacing:.5px; color:#5a3d00; border-color:#fff;
+              background:linear-gradient(160deg,#ffd54a,#f5a623); text-shadow:0 1px 0 rgba(255,255,255,.4); }
+
+  /* overlay screens */
+  .screen { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:10; padding:20px;
+            background:radial-gradient(ellipse at 50% 28%, rgba(30,42,74,.5), rgba(10,16,34,.82)); color:#fff; text-align:center; animation:fadein .3s ease; }
+  @keyframes fadein { from{opacity:0} to{opacity:1} }
   .screen.hidden { display:none; }
-  .screen h1 { font-size:40px; margin-bottom:6px; text-shadow:0 3px 10px rgba(0,0,0,.4); }
-  .screen p { font-size:19px; margin:6px 0; max-width:340px; line-height:1.5; }
-  .play { margin-top:20px; padding:16px 40px; font-size:24px; font-weight:bold; color:#123; background:#ffd54a; border:none;
-          border-radius:40px; box-shadow:0 6px 0 #c79a1f; cursor:pointer; }
-  .play:active { transform:translateY(4px); box-shadow:0 2px 0 #c79a1f; }
-  .big { font-size:52px; color:#ffd54a; margin:8px 0; }
+  .card { background:rgba(18,26,48,.72); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,.12);
+          border-radius:24px; padding:26px 22px; max-width:360px; width:90%; box-shadow:0 14px 44px rgba(0,0,0,.4); }
+  .title { font-size:40px; font-weight:900; margin-bottom:2px; text-shadow:0 3px 14px rgba(0,0,0,.4); }
+  .byline { font-size:15px; opacity:.85; }
+  .desc { font-size:15px; line-height:1.55; opacity:.92; margin:12px 0; }
+  .hint { font-size:12.5px; line-height:1.55; opacity:.85; background:rgba(0,0,0,.2); border-radius:14px; padding:10px 12px; margin-top:10px; }
+  .play { display:inline-block; margin-top:18px; padding:15px 42px; font-size:22px; font-weight:900; color:#5a3d00;
+          background:linear-gradient(160deg,#ffd54a,#f5a623); border:none; border-radius:40px; box-shadow:0 6px 0 #c07d12; cursor:pointer; text-decoration:none; }
+  .play:active { transform:translateY(4px); box-shadow:0 2px 0 #c07d12; }
+  .play.alt { color:#fff; background:linear-gradient(160deg,#6db3f2,#3f7fd6); box-shadow:0 6px 0 #2b5aa0; margin-top:12px; }
+  .play.alt:active { box-shadow:0 2px 0 #2b5aa0; }
+
+  /* wipeout stats */
+  .stats { display:flex; justify-content:center; gap:14px; margin:16px 0 4px; }
+  .stat { background:rgba(0,0,0,.24); border-radius:16px; padding:12px 18px; min-width:88px; }
+  .stat .v { font-size:32px; font-weight:900; color:#ffd54a; line-height:1; }
+  .stat .l { font-size:11px; opacity:.7; text-transform:uppercase; letter-spacing:.6px; margin-top:5px; }
+  .newbest { color:#5fe08a; font-weight:800; font-size:16px; margin-top:8px; min-height:20px; }
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
-<a href="index.html" id="backBtn" style="position:fixed;top:12px;left:12px;z-index:7;color:#fff;font-size:15px;font-weight:bold;text-decoration:none;background:rgba(0,0,0,.3);padding:7px 13px;border-radius:20px;backdrop-filter:blur(3px);">← Arcade</a>
-<div class="hud"><div id="score">0</div><small id="best"></small></div>
+<a href="index.html" id="backBtn">← Arcade</a>
+<div id="hud">
+  <div class="pill"><span id="score">0</span><span class="u">m</span></div>
+  <div class="pill coins">🪙<span id="coins">0</span></div>
+</div>
 <div id="trickPop"></div>
 <div id="puHud"></div>
 
@@ -44,20 +75,27 @@
 </div>
 
 <div class="screen" id="startScreen">
-  <h1>🛹 Skate 3D</h1>
-  <p>Made by <b>Asher</b> 🎮</p>
-  <p>Dodge the red blocks, grab the gold coins, see how far you can go!<br>Grab 🛡 shields (survive a crash) & 🧲 magnets (pull coins)!<br>It gets faster the longer you survive 😎</p>
-  <p><small>◀ ▶ move · JUMP to hop · tap JUMP again in the AIR to FLIP! 🤸</small></p>
-  <p><small>Backflip → Frontflip → 360 · chain them for combo points!</small></p>
-  <button class="play" id="startBtn">▶ PLAY</button>
+  <div class="card">
+    <div class="title">🛹 Skate 3D</div>
+    <div class="byline">Made by <b>Asher</b> 🎮</div>
+    <div class="desc">Dodge the red blocks, grab gold coins, and skate as far as you can! Grab 🛡 shields & 🧲 magnets. It speeds up the longer you survive 😎</div>
+    <div class="hint">◀ ▶ move &nbsp;·&nbsp; JUMP to hop<br>Tap JUMP in the AIR to FLIP! 🤸<br>Backflip → Frontflip → 360</div>
+    <div id="best" class="byline" style="margin-top:12px"></div>
+    <button class="play" id="startBtn">▶ PLAY</button>
+  </div>
 </div>
 
 <div class="screen hidden" id="overScreen">
-  <h1>Wipeout! 💥</h1>
-  <div class="big" id="finalScore">0</div>
-  <p id="bestMsg"></p>
-  <button class="play" id="againBtn">↻ PLAY AGAIN</button>
-  <a href="index.html" class="play" style="background:#5b9bf0;box-shadow:0 6px 0 #3a6ca8;margin-top:12px;text-decoration:none;display:inline-block;">🕹️ TO ARCADE</a>
+  <div class="card">
+    <div class="title">Wipeout! 💥</div>
+    <div class="stats">
+      <div class="stat"><div class="v" id="finalScore">0</div><div class="l">Score</div></div>
+      <div class="stat"><div class="v" id="finalCoins">0</div><div class="l">Coins 🪙</div></div>
+    </div>
+    <div class="newbest" id="bestMsg"></div>
+    <button class="play" id="againBtn">↻ PLAY AGAIN</button>
+    <a href="index.html" class="play alt">🕹️ TO ARCADE</a>
+  </div>
 </div>
 
 <script type="importmap">
@@ -126,7 +164,7 @@ const GRAV=-55, JUMP_V=17;
 // Tricks (Asher): while in the air, tap JUMP again to flip. Chain for combos.
 const TRICKS3D=[{name:'BACKFLIP',axis:'x',dir:-1,bonus:30},{name:'FRONTFLIP',axis:'x',dir:1,bonus:40},{name:'360 SPIN',axis:'y',dir:1,bonus:60}];
 let flip=null, trickCombo=0;
-let shieldActive=false, magnetTimer=0;
+let shieldActive=false, magnetTimer=0, coinCount=0;
 let best=+(localStorage.getItem('skate3d_best')||0);
 $('best').textContent = best ? 'Best: '+best : '';
 
@@ -134,7 +172,7 @@ function reset(){
   lane=1; targetX=0; py=0; vy=0; onGround=true;
   speed=17; dist=0; score=0; nextSpawnDist=0;
   obstacles.forEach(o=>o.visible=false); coins.forEach(c=>c.visible=false); powerups.forEach(p=>p.visible=false);
-  shieldActive=false; magnetTimer=0; updatePU();
+  shieldActive=false; magnetTimer=0; coinCount=0; $('coins').textContent='0'; updatePU();
   player.position.set(0,0,0); player.rotation.set(0,0,0); flip=null; trickCombo=0; $('score').textContent='0';
 }
 function spawnRow(){
@@ -155,7 +193,7 @@ function showTrick(txt){ const el=$('trickPop'); el.textContent=txt; el.classLis
 function updatePU(){ let s=''; if(shieldActive)s+='🛡'; if(magnetTimer>0)s+=(s?' ':'')+'🧲'+Math.ceil(magnetTimer); $('puHud').textContent=s; }
 function start(){ reset(); state='play'; $('startScreen').classList.add('hidden'); $('overScreen').classList.add('hidden'); $('btns').style.display='flex'; }
 function gameOver(){
-  state='over'; $('btns').style.display='none'; $('finalScore').textContent=score;
+  state='over'; $('btns').style.display='none'; $('finalScore').textContent=score; $('finalCoins').textContent=coinCount;
   if (score>best){ best=score; localStorage.setItem('skate3d_best',best); $('bestMsg').textContent='🏆 NEW BEST SCORE!'; }
   else $('bestMsg').textContent='Best: '+best;
   $('best').textContent='Best: '+best; $('overScreen').classList.remove('hidden');
@@ -206,7 +244,7 @@ function tick(now){
     for (const c of coins){ if(!c.visible) continue;
       c.position.z += speed*dt; c.rotation.y += dt*5;
       if (magnetTimer>0) c.position.x += (px-c.position.x)*Math.min(1,dt*6);   // magnet pull
-      if (c.position.z>-1 && c.position.z<1 && Math.abs(c.position.x-px)<1.0 && Math.abs(py-0.9)<1.2){ c.visible=false; dist+=12; }
+      if (c.position.z>-1 && c.position.z<1 && Math.abs(c.position.x-px)<1.0 && Math.abs(py-0.9)<1.2){ c.visible=false; dist+=12; coinCount++; $('coins').textContent=coinCount; }
       else if (c.position.z>9) c.visible=false;
     }
     if (magnetTimer>0){ magnetTimer-=dt; if(magnetTimer<0)magnetTimer=0; updatePU(); }
