@@ -149,7 +149,7 @@ function spawnRow(){
   if (Math.random()<0.22){ const p=powerups.find(p=>!p.visible); if(p){ const isShield=Math.random()<0.5; p.userData.type=isShield?'shield':'magnet'; p.material=isShield?shieldMat:magnetMat; p.visible=true; p.position.set(LANES[Math.floor(Math.random()*3)],1.0,SPAWN_Z-6); } }
 }
 function move(d){ if(state!=='play')return; lane=Math.max(0,Math.min(2,lane+d)); targetX=LANES[lane]; }
-function jump(){ if(state!=='play')return; if(onGround){ vy=JUMP_V; onGround=false; trickCombo=0; } else { doTrick(); } }
+function jump(){ if(state!=='play')return; if(onGround){ vy=JUMP_V; onGround=false; } else { doTrick(); } }
 function doTrick(){ if(flip)return; const t=TRICKS3D[trickCombo%3]; trickCombo++; flip={axis:t.axis,dir:t.dir,remaining:Math.PI*2}; dist+=t.bonus; showTrick(t.name+'! +'+t.bonus); }
 function showTrick(txt){ const el=$('trickPop'); el.textContent=txt; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); }
 function updatePU(){ let s=''; if(shieldActive)s+='🛡'; if(magnetTimer>0)s+=(s?' ':'')+'🧲'+Math.ceil(magnetTimer); $('puHud').textContent=s; }
@@ -188,12 +188,12 @@ function tick(now){
     $('score').textContent = score;
 
     player.position.x += (targetX-player.position.x)*Math.min(1,dt*12);
-    if (!onGround){ vy+=GRAV*dt; py+=vy*dt; if(py<=0){ py=0; vy=0; onGround=true; if(flip){player.rotation[flip.axis]=0;flip=null;} trickCombo=0; } }
+    if (!onGround){ vy+=GRAV*dt; py+=vy*dt; if(py<=0){ py=0; vy=0; onGround=true; if(flip){player.rotation[flip.axis]=0;flip=null;} } }
     player.position.y = py;
     player.rotation.z = (targetX-player.position.x)*0.25;
     board.rotation.x = onGround ? 0 : -0.5;
     // trick flip spin (Asher's tricks) — rotates player on x (flips) or y (360)
-    if (flip){ const sf=Math.min(flip.remaining, dt*14); player.rotation[flip.axis]+=flip.dir*sf; flip.remaining-=sf; if(flip.remaining<=0){ player.rotation[flip.axis]=0; flip=null; } }
+    if (flip){ const sf=Math.min(flip.remaining, dt*20); player.rotation[flip.axis]+=flip.dir*sf; flip.remaining-=sf; if(flip.remaining<=0){ player.rotation[flip.axis]=0; flip=null; } }
 
     for (const st of stripes){ st.position.z += speed*dt; if (st.position.z>8) st.position.z -= STRIPE_SPAN; }
 
