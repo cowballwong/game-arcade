@@ -211,8 +211,9 @@ const config = {
     height: GAME_H,
     parent: 'game-container',
     backgroundColor: '#1a1a2e',
-    pixelArt: true,
-    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+    pixelArt: false,
+    render: { antialias: true, antialiasGL: true, roundPixels: false },
+    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH, zoom: 1 },
     physics: {
         default: 'arcade',
         arcade: { gravity: { y: 0 }, debug: false }
