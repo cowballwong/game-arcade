@@ -10,6 +10,9 @@
   #c { display:block; width:100%; height:100%; }
   .hud { position:fixed; top:14px; left:0; right:0; text-align:center; color:#fff; font-size:24px; font-weight:bold; text-shadow:0 2px 6px rgba(0,0,0,.45); pointer-events:none; z-index:5; }
   .hud small { display:block; font-size:15px; opacity:.9; margin-top:2px; }
+  #trickPop { position:fixed; top:36%; left:0; right:0; text-align:center; z-index:6; color:#ffd54a; font-size:30px; font-weight:bold; text-shadow:0 2px 8px rgba(0,0,0,.55); opacity:0; pointer-events:none; }
+  #trickPop.show { animation:trickpop .8s ease-out; }
+  @keyframes trickpop { 0%{opacity:0;transform:scale(.6)} 20%{opacity:1;transform:scale(1.15)} 70%{opacity:1;transform:scale(1)} 100%{opacity:0;transform:translateY(-34px) scale(1)} }
   .btns { position:fixed; bottom:22px; left:0; right:0; display:flex; justify-content:center; gap:18px; z-index:6; }
   .btn { width:78px; height:78px; border-radius:50%; background:rgba(255,255,255,.28); border:3px solid rgba(255,255,255,.7);
          color:#fff; font-size:32px; display:flex; align-items:center; justify-content:center; user-select:none; }
@@ -30,6 +33,7 @@
 <canvas id="c"></canvas>
 <a href="index.html" id="backBtn" style="position:fixed;top:12px;left:12px;z-index:7;color:#fff;font-size:15px;font-weight:bold;text-decoration:none;background:rgba(0,0,0,.3);padding:7px 13px;border-radius:20px;backdrop-filter:blur(3px);">← Arcade</a>
 <div class="hud"><div id="score">0</div><small id="best"></small></div>
+<div id="trickPop"></div>
 
 <div class="btns" id="btns" style="display:none">
   <div class="btn" id="bL">◀</div>
@@ -41,7 +45,8 @@
   <h1>🛹 Skate 3D</h1>
   <p>Made by <b>Asher</b> 🎮</p>
   <p>Dodge the red blocks, grab the gold coins, see how far you can go!<br>It gets faster the longer you survive 😎</p>
-  <p><small>◀ ▶ move · JUMP to hop · (arrows + space on a keyboard)</small></p>
+  <p><small>◀ ▶ move · JUMP to hop · tap JUMP again in the AIR to FLIP! 🤸</small></p>
+  <p><small>Backflip → Frontflip → 360 · chain them for combo points!</small></p>
   <button class="play" id="startBtn">▶ PLAY</button>
 </div>
 
@@ -111,6 +116,9 @@ for (let i=0;i<21;i++){ const c=new THREE.Mesh(new THREE.TorusGeometry(0.4,0.16,
 let state='start', lane=1, targetX=0, py=0, vy=0, onGround=true;
 let speed=17, dist=0, score=0, nextSpawnDist=0, spin=0;
 const GRAV=-55, JUMP_V=17;
+// Tricks (Asher): while in the air, tap JUMP again to flip. Chain for combos.
+const TRICKS3D=[{name:'BACKFLIP',axis:'x',dir:-1,bonus:30},{name:'FRONTFLIP',axis:'x',dir:1,bonus:40},{name:'360 SPIN',axis:'y',dir:1,bonus:60}];
+let flip=null, trickCombo=0;
 let best=+(localStorage.getItem('skate3d_best')||0);
 $('best').textContent = best ? 'Best: '+best : '';
 
@@ -118,7 +126,7 @@ function reset(){
   lane=1; targetX=0; py=0; vy=0; onGround=true;
   speed=17; dist=0; score=0; nextSpawnDist=0;
   obstacles.forEach(o=>o.visible=false); coins.forEach(c=>c.visible=false);
-  player.position.set(0,0,0); player.rotation.z=0; $('score').textContent='0';
+  player.position.set(0,0,0); player.rotation.set(0,0,0); flip=null; trickCombo=0; $('score').textContent='0';
 }
 function spawnRow(){
   const obLane = Math.floor(Math.random()*3);
@@ -131,7 +139,9 @@ function spawnRow(){
   }
 }
 function move(d){ if(state!=='play')return; lane=Math.max(0,Math.min(2,lane+d)); targetX=LANES[lane]; }
-function jump(){ if(state!=='play')return; if(onGround){ vy=JUMP_V; onGround=false; } }
+function jump(){ if(state!=='play')return; if(onGround){ vy=JUMP_V; onGround=false; trickCombo=0; } else { doTrick(); } }
+function doTrick(){ if(flip)return; const t=TRICKS3D[trickCombo%3]; trickCombo++; flip={axis:t.axis,dir:t.dir,remaining:Math.PI*2}; dist+=t.bonus; showTrick(t.name+'! +'+t.bonus); }
+function showTrick(txt){ const el=$('trickPop'); el.textContent=txt; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); }
 function start(){ reset(); state='play'; $('startScreen').classList.add('hidden'); $('overScreen').classList.add('hidden'); $('btns').style.display='flex'; }
 function gameOver(){
   state='over'; $('btns').style.display='none'; $('finalScore').textContent=score;
@@ -167,10 +177,12 @@ function tick(now){
     $('score').textContent = score;
 
     player.position.x += (targetX-player.position.x)*Math.min(1,dt*12);
-    if (!onGround){ vy+=GRAV*dt; py+=vy*dt; if(py<=0){ py=0; vy=0; onGround=true; } }
+    if (!onGround){ vy+=GRAV*dt; py+=vy*dt; if(py<=0){ py=0; vy=0; onGround=true; if(flip){player.rotation[flip.axis]=0;flip=null;} trickCombo=0; } }
     player.position.y = py;
     player.rotation.z = (targetX-player.position.x)*0.25;
     board.rotation.x = onGround ? 0 : -0.5;
+    // trick flip spin (Asher's tricks) — rotates player on x (flips) or y (360)
+    if (flip){ const sf=Math.min(flip.remaining, dt*14); player.rotation[flip.axis]+=flip.dir*sf; flip.remaining-=sf; if(flip.remaining<=0){ player.rotation[flip.axis]=0; flip=null; } }
 
     for (const st of stripes){ st.position.z += speed*dt; if (st.position.z>8) st.position.z -= STRIPE_SPAN; }
 
