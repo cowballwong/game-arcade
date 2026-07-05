@@ -30,6 +30,7 @@ const SaveData = {
         highscore: 0, totalCoins: 0, selectedChar: 0, selectedBoard: 0,
         selectedOutfit: 0, musicTrack: 0, unlockedChars: [0], unlockedBoards: [0],
         unlockedOutfits: [0], raceWins: 0, racesPlayed: 0,
+        unlockedTricks: [],
         selectedHat: 0, selectedTop: 0, selectedBottom: 0,
         unlockedHats: [0,1], unlockedTops: [0], unlockedBottoms: [0],
         jttHighscore: 0, jttGamesPlayed: 0, jttMusicTrack: 0,

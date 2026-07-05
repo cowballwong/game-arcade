@@ -137,8 +137,15 @@ class CharSelectScene extends Phaser.Scene {
 }
 
 // ============================================================
-// SHOP - Boards & Outfits
+// SHOP - Boards, Outfits & Tricks
 // ============================================================
+// Tricks (Asher's idea): buy with coins; once owned, clearing an obstacle
+// performs your BEST owned trick for a bonus. Pricier trick = bigger bonus.
+const TRICKS = [
+    { name: 'BACKFLIP',  cost: 3000, bonus: 30 },
+    { name: 'FRONTFLIP', cost: 4000, bonus: 40 },
+    { name: '360 SPIN',  cost: 6000, bonus: 60 },
+];
 class ShopScene extends Phaser.Scene {
     constructor() { super('Shop'); }
     create() {
@@ -148,14 +155,16 @@ class ShopScene extends Phaser.Scene {
         this.tab = this.tab || 'boards';
 
         // Tabs
-        const tabBoard = makeBtn(this, 70, 70, 'BOARDS', this.tab==='boards'?'#886622':'#444', () => { this.tab='boards'; this.scene.restart(); });
-        const tabOutfit = makeBtn(this, 200, 70, 'OUTFITS', this.tab==='outfits'?'#886622':'#444', () => { this.tab='outfits'; this.scene.restart(); });
+        const tabBoard = makeBtn(this, 48, 70, 'BOARDS', this.tab==='boards'?'#886622':'#444', () => { this.tab='boards'; this.scene.restart(); });
+        const tabOutfit = makeBtn(this, 135, 70, 'OUTFITS', this.tab==='outfits'?'#886622':'#444', () => { this.tab='outfits'; this.scene.restart(); });
+        const tabTrick = makeBtn(this, 222, 70, 'TRICKS', this.tab==='tricks'?'#886622':'#444', () => { this.tab='tricks'; this.scene.restart(); });
 
-        const items = this.tab === 'boards' ? BOARDS : OUTFITS;
-        const unlockedKey = this.tab === 'boards' ? 'unlockedBoards' : 'unlockedOutfits';
-        const selectedKey = this.tab === 'boards' ? 'selectedBoard' : 'selectedOutfit';
+        const isTricks = this.tab === 'tricks';
+        const items = this.tab === 'boards' ? BOARDS : this.tab === 'outfits' ? OUTFITS : TRICKS;
+        const unlockedKey = this.tab === 'boards' ? 'unlockedBoards' : this.tab === 'outfits' ? 'unlockedOutfits' : 'unlockedTricks';
+        const selectedKey = this.tab === 'boards' ? 'selectedBoard' : this.tab === 'outfits' ? 'selectedOutfit' : null;
         const unlocked = SaveData.get(unlockedKey);
-        const selected = SaveData.get(selectedKey);
+        const selected = selectedKey ? SaveData.get(selectedKey) : -1;
 
         const startY = 105;
         items.forEach((item, i) => {
@@ -170,6 +179,7 @@ class ShopScene extends Phaser.Scene {
                 g.fillStyle(item.wheels); g.fillRect(17, y + 2, 4, 3); g.fillRect(33, y + 2, 4, 3);
             }
             this.add.text(55, y - 6, item.name, { fontSize:'9px', fontFamily:'monospace', color: isSel ? '#FFD700' : '#ddd' });
+            if (isTricks) this.add.text(55, y + 5, '+'+item.bonus+' coins per trick jump!', { fontSize:'6px', fontFamily:'monospace', color:'#66aaff' });
 
             if (!owned) {
                 makeBtn(this, 220, y, '$'+item.cost, '#886622', () => {
@@ -179,6 +189,8 @@ class ShopScene extends Phaser.Scene {
                         this.scene.restart();
                     }
                 });
+            } else if (isTricks) {
+                this.add.text(220, y, 'OWNED', { fontSize:'8px', fontFamily:'monospace', color:'#44FF44' }).setOrigin(0.5);
             } else if (!isSel) {
                 makeBtn(this, 220, y, 'EQUIP', '#336644', () => { SaveData.set(selectedKey, i); this.scene.restart(); });
             } else {
@@ -702,7 +714,7 @@ class GameScene extends Phaser.Scene {
     moveRight(){if(this.isCrashed||this.currentLane>=4)return;this.currentLane++;this.playerTargetX=LANE_X[this.currentLane];audio.playSwoosh();}
     _activateSafe(){if(this.safeCooldown>0||this.safeActive||this.isCrashed||this.gameState!=='playing')return;this.safeActive=true;this.safeTimer=3;this.invincible=true;this.player.setTint(0x44FFFF);audio.playPowerup();this.cameras.main.flash(200,68,153,255,false,null,this);}
 
-    doJump(){if(this.isJumping||this.isCrashed)return;this.isJumping=true;this.jumpedOver=false;audio.playJump();this.tweens.add({targets:this,playerVisualOffsetY:-30,duration:220,ease:'Quad.easeOut',yoyo:true,hold:160,onComplete:()=>{this.playerVisualOffsetY=0;this.isJumping=false;audio.playLand();if(this.jumpedOver){this.hud.jumpBonus.setText('+JUMP!');this.hud.jumpBonus.setAlpha(1);this.tweens.add({targets:this.hud.jumpBonus,alpha:0,y:PLAYER_Y-80,duration:600,onComplete:()=>{this.hud.jumpBonus.y=PLAYER_Y-50;}});}}});this.tweens.add({targets:this.playerShadow,scaleX:0.4,scaleY:0.4,duration:220,ease:'Quad.easeOut',yoyo:true,hold:160});}
+    doJump(){if(this.isJumping||this.isCrashed)return;this.isJumping=true;this.jumpedOver=false;audio.playJump();this.tweens.add({targets:this,playerVisualOffsetY:-30,duration:220,ease:'Quad.easeOut',yoyo:true,hold:160,onComplete:()=>{this.playerVisualOffsetY=0;this.isJumping=false;audio.playLand();if(this.jumpedOver){var _tk=SaveData.get('unlockedTricks')||[];var _bt=_tk.length?TRICKS[Math.max.apply(null,_tk)]:null;if(_bt){this.coins+=_bt.bonus;this.hud.jumpBonus.setText(_bt.name+'! +'+_bt.bonus);this.player.angle=0;this.tweens.add({targets:this.player,angle:360,duration:340});}else{this.hud.jumpBonus.setText('+JUMP!');}this.hud.jumpBonus.setAlpha(1);this.tweens.add({targets:this.hud.jumpBonus,alpha:0,y:PLAYER_Y-80,duration:600,onComplete:()=>{this.hud.jumpBonus.y=PLAYER_Y-50;}});}}});this.tweens.add({targets:this.playerShadow,scaleX:0.4,scaleY:0.4,duration:220,ease:'Quad.easeOut',yoyo:true,hold:160});}
 
     _updateDifficulty(){const th=[0,500,1500,3000,5000,8000];for(let i=th.length-1;i>=0;i--)if(this.distance>=th[i]){this.difficultyPhase=i;return;}}
     _getPattern(){const adj=this.difficultyPhase-this.diffMode.patternPhase;let p=[...this.easyP];if(adj<1)p=p.filter(pat=>!pat.some(i=>i.type==='pedestrian'));if(adj>=2)p.push(...this.medP);if(adj>=4)p.push(...this.hardP);return p[Math.floor(Math.random()*p.length)];}

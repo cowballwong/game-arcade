@@ -101,13 +101,7 @@ class LauncherScene extends Phaser.Scene {
     }
 
     async _fetchLeaderboard() {
-        if (!LEADERBOARD_URL) {
-            if (this.loadingText) this.loadingText.destroy();
-            this.add.text(GAME_W / 2, 145, 'Leaderboard not configured.\nSee leaderboard_apps_script.js', {
-                fontSize: '7px', fontFamily: 'monospace', color: '#555', align: 'center'
-            }).setOrigin(0.5);
-            return;
-        }
+        // Leaderboard is now Firestore-backed (see shared.js) — always available.
         const scores = await Leaderboard.fetch();
         if (this.loadingText) this.loadingText.destroy();
 
